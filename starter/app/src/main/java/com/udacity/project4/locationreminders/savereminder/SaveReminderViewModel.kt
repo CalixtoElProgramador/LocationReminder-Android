@@ -67,9 +67,14 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     /**
      * Validate the entered data and show error to the user if there's any invalid data
      */
-    fun validateEnteredData(reminderData: ReminderDataItem): Boolean {
+    private fun validateEnteredData(reminderData: ReminderDataItem): Boolean {
         if (reminderData.title.isNullOrEmpty()) {
             showSnackBarInt.value = R.string.err_enter_title
+            return false
+        }
+
+        if(reminderData.description.isNullOrEmpty()) {
+            showSnackBarInt.value = R.string.err_enter_description
             return false
         }
 
@@ -78,5 +83,15 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
             return false
         }
         return true
+    }
+
+    fun getReminderDataItem(): ReminderDataItem {
+        val title = reminderTitle.value
+        val description = reminderDescription.value
+        val location = reminderSelectedLocationStr.value
+        val latitude = latitude.value
+        val longitude = longitude.value
+
+        return ReminderDataItem(title, description, location, latitude, longitude)
     }
 }
