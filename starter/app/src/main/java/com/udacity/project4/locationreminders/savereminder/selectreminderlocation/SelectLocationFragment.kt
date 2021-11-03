@@ -50,6 +50,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var selectedPoi: PointOfInterest
+    private lateinit var snackbar: Snackbar
+    private lateinit var snackbar02: Snackbar
+    private lateinit var marker: Marker
 
     lateinit var geofencingClient: GeofencingClient
 
@@ -74,7 +77,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         setDisplayHomeAsUpEnabled(true)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment =   childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         binding.saveLocation.setOnClickListener {
@@ -82,6 +85,20 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
 
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        snackbar = Snackbar.make(
+            view,
+            R.string.location_required_error,
+            Snackbar.LENGTH_INDEFINITE
+        )
+        snackbar02 = Snackbar.make(
+            view,
+            R.string.permission_denied_explanation,
+            Snackbar.LENGTH_INDEFINITE
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -96,11 +113,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     @SuppressLint("MissingPermission")
     private fun enableLocation() {
-        if ( isPermissionGranted()) {
+        if (isPermissionGranted()) {
             Log.d(TAG, "permissions granted, preparing user location")
             map.isMyLocationEnabled = true
             fusedLocationClient.lastLocation
-                .addOnSuccessListener { location : Location? ->
+                .addOnSuccessListener { location: Location? ->
                     run {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
@@ -108,7 +125,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                             val long = location.longitude
                             val currentPosition = LatLng(lat, long)
                             val zoom = 15f
-                            map.addMarker(
+                            marker = map.addMarker(
                                 MarkerOptions().position(currentPosition)
                                     .title(getString(R.string.you_are_here))
                             )
@@ -127,15 +144,16 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     /*
     * MAP STYLING FUNCTIONS
     * */
-    private fun setPoiClick(map: GoogleMap){
+    private fun setPoiClick(map: GoogleMap) {
         map.setOnPoiClickListener { poi ->
+            map.clear(); marker.remove()
             selectedPoi = poi
-            val poiMarker = map.addMarker(
+            marker = map.addMarker(
                 MarkerOptions()
                     .position(poi.latLng)
                     .title(poi.name)
             )
-            poiMarker!!.showInfoWindow()
+            marker.showInfoWindow()
             binding.saveLocation.visibility = View.VISIBLE
         }
     }
@@ -144,7 +162,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         map.setOnMapLongClickListener { latLng ->
             val title = createTitle(latLng)
             selectedPoi = PointOfInterest(latLng, title, title)
-            map.addMarker(
+            map.clear(); marker.remove()
+            marker = map.addMarker(
                 MarkerOptions()
                     .position(latLng)
                     .title(getString(R.string.dropped_pin))
@@ -154,15 +173,20 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    private fun setMapStyle(map: GoogleMap){
+    private fun setMapStyle(map: GoogleMap) {
         try {
             // Customize the styling of the base map using a JSON object defined
             // in a raw resource file.
-            val success = map.setMapStyle(MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.map_style))
-            if(!success){
+            val success = map.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    requireContext(),
+                    R.raw.map_style
+                )
+            )
+            if (!success) {
                 Log.e(TAG, "Style parsing failed")
             }
-        } catch (e:Resources.NotFoundException){
+        } catch (e: Resources.NotFoundException) {
             Log.e(TAG, "Unable to find style. Error: ", e)
         }
     }
@@ -173,26 +197,24 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     @TargetApi(29)
     private fun isPermissionGranted(): Boolean {
         return ActivityCompat.checkSelfPermission(
-            requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
 
     }
 
-    @TargetApi(29 )
+    @TargetApi(29)
     private fun requestLocationPermission() {
         var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
 
         val shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(
             requireActivity(),
-            Manifest.permission.ACCESS_FINE_LOCATION)
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
 
-        if(shouldProvideRationale){
-            Snackbar.make( binding.root
-                , R.string.location_required_error
-                , Snackbar.LENGTH_INDEFINITE
-            ).setAction(R.string.permission_denied_explanation) {
-                requestPermissions( permissionsArray, REQUEST_PERMISSION_LOCATION) }
-                .setDuration(Snackbar.LENGTH_LONG)
-                .show()
+        if (shouldProvideRationale) {
+            snackbar.setAction(R.string.settings) {
+                requestPermissions(permissionsArray, REQUEST_PERMISSION_LOCATION)
+            }.show()
         } else {
             requestPermissions(permissionsArray, REQUEST_PERMISSION_LOCATION)
         }
@@ -202,24 +224,21 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
-        grantResults: IntArray) {
+        grantResults: IntArray
+    ) {
 
         Log.d(TAG, "onRequestPermissionsResult")
         if (grantResults.isEmpty() ||
-            grantResults[0] == PackageManager.PERMISSION_DENIED) {
-            Snackbar.make(
-                binding.saveLocation,
-                R.string.permission_denied_explanation,
-                Snackbar.LENGTH_INDEFINITE
-            )
-                // Create an action that opens the settings for the specific app
-                .setAction(R.string.settings) {
-                    startActivity(Intent().apply {
-                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                        data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    })
-                }.show()
+            grantResults[0] == PackageManager.PERMISSION_DENIED
+        ) {
+            // Create an action that opens the settings for the specific app
+            snackbar02.setAction(R.string.settings) {
+                startActivity(Intent().apply {
+                    action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                })
+            }.show()
         } else {
             enableLocation()
         }
@@ -257,5 +276,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         else -> super.onOptionsItemSelected(item)
     }
 
-
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::snackbar.isInitialized && ::snackbar02.isInitialized) {
+            snackbar.dismiss(); snackbar02.dismiss()
+        }
+    }
 }
