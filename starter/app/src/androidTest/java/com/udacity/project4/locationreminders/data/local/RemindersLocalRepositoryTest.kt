@@ -47,7 +47,7 @@ class RemindersLocalRepositoryTest {
     }
 
     @After
-    fun closeDb() { database.close()}
+    fun closeDb() { database.close() }
 
     @Test
     fun saveReminderRetrievesReminder_ReturnsSuccess()= runBlocking {

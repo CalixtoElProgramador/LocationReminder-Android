@@ -37,7 +37,7 @@ class RemindersDaoTest {
     }
 
     @After
-    fun closeDb(){database.close()}
+    fun closeDb(){ database.close() }
 
     private val reminder = ReminderDTO("title", "description", "location", 10.0, 10.0)
 
