@@ -14,7 +14,6 @@ import androidx.test.espresso.matcher.RootMatchers.withDecorView
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-
 import com.udacity.project4.locationreminders.RemindersActivity
 import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
@@ -23,8 +22,8 @@ import com.udacity.project4.locationreminders.data.local.RemindersLocalRepositor
 import com.udacity.project4.locationreminders.reminderslist.RemindersListViewModel
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.util.DataBindingIdlingResource
-import com.udacity.project4.util.EspressoIdlingResource
 import com.udacity.project4.util.monitorActivity
+import com.udacity.project4.utils.EspressoIdlingResource
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.core.IsNot.not
 import org.junit.After
